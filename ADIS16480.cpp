@@ -30,23 +30,84 @@
 // Constructor with configurable CS pin and creates _CS private variable
 ////////////////////////////////////////////////////////////////////////////
 // CS - Chip select pin
+// DR - DR output pin for data ready
+// RST - Hardware reset pin
 ////////////////////////////////////////////////////////////////////////////
-ADIS16480::ADIS16480(int CS) {
+ADIS16480::ADIS16480(int CS, int DR, int RST) {
   _CS = CS;
+  _DR = DR;
+  _RST = RST;
   SPI.begin(); // initialize SPI bus
   SPI.setBitOrder(MSBFIRST); // for ADIS16480
   SPI.setClockDivider(SPI_CLOCK_DIV4); // for 4MHz
-  SPI.setDataMode(SPI_MODE3); // Clock base at zero, sampled on rising, propagated on falling
-  pinMode(_CS, OUTPUT); // Set CS pin to be an Output
+  SPI.setDataMode(SPI_MODE3); // Clock base at one, sampled on falling edge
+  pinMode(_CS, OUTPUT); // Set CS pin to be an output
+  pinMode(_DR, INPUT); // Set DR pin to be an input
+  pinMode(_RST, OUTPUT); // Set RST pin to be an output
   digitalWrite(_CS, HIGH); // Initialize CS pin to be high
+  digitalWrite(_RST, HIGH); // Initialize RST pin to be high
 }
 
 ////////////////////////////////////////////////////////////////////////////
 //                           Destructor
 ////////////////////////////////////////////////////////////////////////////
-ADIS16480::~ADIS16480(){
+ADIS16480::~ADIS16480() {
   // Put device to sleep
-  sleep();
+  //sleep();
   // Close SPI bus
   SPI.end();
+}
+
+////////////////////////////////////////////////////////////////////////////
+// reset()
+////////////////////////////////////////////////////////////////////////////
+// Performs hardware reset by sending _RST pin low for 2 seconds
+////////////////////////////////////////////////////////////////////////////
+void ADIS16480::reset() {
+  digitalWrite(_RST, LOW);
+  digitalWrite(_RST, HIGH);
+  delay(2000);
+}
+
+////////////////////////////////////////////////////////////////////////////
+// unsigned int regRead(unsigned int regAddr[2])
+////////////////////////////////////////////////////////////////////////////
+// Reads 1 byte of data to the specified register over SPI
+////////////////////////////////////////////////////////////////////////////
+// regAddr - address of register
+// return - byte of data
+////////////////////////////////////////////////////////////////////////////
+// TODO - this function can be flaky and doesn't work inside the DEBUG
+//        portion of regWrite
+////////////////////////////////////////////////////////////////////////////
+unsigned int ADIS16480::regRead(unsigned int regAddr) {
+  // Set page
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
+  SPI.transfer(0x80); // Memory write
+  SPI.transfer((unsigned char)(regAddr << 8)); // Change page
+  //Serial.println((unsigned char)regAddr, HEX);
+  //Serial.println((unsigned char)(regAddr << 8), HEX);
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+
+  // Set register
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADF7242
+  SPI.transfer((unsigned char)regAddr);
+  SPI.transfer(SPI_NOP);
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+
+  // Read Data
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADF7242
+  unsigned int _dataRead = (SPI.transfer(SPI_NOP) << 8) | SPI.transfer(SPI_NOP);
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480\
+
+  #ifdef DEBUG
+    Serial.print("Register 0x");
+    Serial.print((unsigned char)regAddr, HEX);
+    Serial.print(" on page 0x");
+    Serial.print((unsigned char)(regAddr << 8), HEX);
+    Serial.print(" reads: 0x");
+    Serial.println(_dataRead, HEX);
+  #endif
+
+  return(_dataRead);
 }
