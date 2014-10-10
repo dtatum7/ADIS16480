@@ -39,7 +39,7 @@ ADIS16480::ADIS16480(int CS, int DR, int RST) {
   _RST = RST;
   SPI.begin(); // initialize SPI bus
   SPI.setBitOrder(MSBFIRST); // for ADIS16480
-  SPI.setClockDivider(SPI_CLOCK_DIV2); // for 8MHz
+  SPI.setClockDivider(SPI_CLOCK_DIV4); // for 4MHz
   SPI.setDataMode(SPI_MODE3); // Clock base at one, sampled on falling edge
   pinMode(_CS, OUTPUT); // Set CS pin to be an output
   pinMode(_DR, INPUT); // Set DR pin to be an input
@@ -70,6 +70,34 @@ void ADIS16480::reset() {
 }
 
 ////////////////////////////////////////////////////////////////////////////
+// unsigned int pageRead()
+////////////////////////////////////////////////////////////////////////////
+// Reads current page
+////////////////////////////////////////////////////////////////////////////
+// return - current page
+////////////////////////////////////////////////////////////////////////////
+unsigned char ADIS16480::pageRead() {
+  // Set page
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
+  SPI.transfer(SPI_NOP); // SPI_NOP = 0x00
+  SPI.transfer(SPI_NOP); // SPI_NOP = 0x00
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+
+  // Read Data
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
+  SPI.transfer(SPI_NOP); // SPI_NOP = 0x00
+  unsigned char _dataRead = SPI.transfer(SPI_NOP); // read page
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+
+  #ifdef DEBUG
+    Serial.print("Current page: 0x0");
+    Serial.println(_dataRead, HEX);
+  #endif
+
+  return(_dataRead);
+}
+
+////////////////////////////////////////////////////////////////////////////
 // unsigned int regRead(unsigned int regAddr)
 ////////////////////////////////////////////////////////////////////////////
 // Reads 1 16 bit integer of data to the specified register over SPI
@@ -93,7 +121,7 @@ unsigned int ADIS16480::regRead(unsigned int regAddr) {
   // Read Data
   digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
   unsigned int _dataRead = (SPI.transfer(SPI_NOP) << 8) | SPI.transfer(SPI_NOP);
-  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480\
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
 
   #ifdef DEBUG
     Serial.print("Register 0x");

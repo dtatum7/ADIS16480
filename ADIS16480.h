@@ -186,6 +186,10 @@ public:
   // Performs hardware reset by sending pin 7 low for 2 seconds
   void reset();
 
+  // Read current page
+  unsigned char pageRead();
+
+  // Read register
   unsigned int regRead(unsigned int regAddr);
 
 private:
