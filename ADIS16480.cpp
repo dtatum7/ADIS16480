@@ -41,6 +41,9 @@ ADIS16480::ADIS16480(int CS, int DR, int RST) {
   SPI.setBitOrder(MSBFIRST); // for ADIS16480
   SPI.setClockDivider(SPI_CLOCK_DIV4); // for 4MHz
   SPI.setDataMode(SPI_MODE3); // Clock base at one, sampled on falling edge
+  pinMode(11, OUTPUT); // Set MOSI pin to be an output
+  pinMode(12, INPUT); // Set MISO pin to be an output
+  pinMode(13, OUTPUT); // Set clock pin to be an output
   pinMode(_CS, OUTPUT); // Set CS pin to be an output
   pinMode(_DR, INPUT); // Set DR pin to be an input
   pinMode(_RST, OUTPUT); // Set RST pin to be an output
@@ -70,6 +73,18 @@ void ADIS16480::reset() {
 }
 
 ////////////////////////////////////////////////////////////////////////////
+// void configSPI()
+////////////////////////////////////////////////////////////////////////////
+// Sets SPI bit order, clock divider, and data mode. This function is useful
+// when there are multiple SPI devices using different settings.
+////////////////////////////////////////////////////////////////////////////
+void ADIS16480::configSPI() {
+  SPI.setBitOrder(MSBFIRST); // for ADIS16480
+  SPI.setClockDivider(SPI_CLOCK_DIV4); // for 4MHz
+  SPI.setDataMode(SPI_MODE3); // Clock base at one, sampled on falling edge
+}
+
+////////////////////////////////////////////////////////////////////////////
 // unsigned int pageRead()
 ////////////////////////////////////////////////////////////////////////////
 // Reads current page
@@ -77,6 +92,7 @@ void ADIS16480::reset() {
 // return - current page
 ////////////////////////////////////////////////////////////////////////////
 unsigned char ADIS16480::pageRead() {
+  configSPI();
   // Set page
   digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
   SPI.transfer(SPI_NOP); // SPI_NOP = 0x00
@@ -106,6 +122,7 @@ unsigned char ADIS16480::pageRead() {
 // return - integer of data
 ////////////////////////////////////////////////////////////////////////////
 unsigned int ADIS16480::regRead(unsigned int regAddr) {
+  configSPI();
   // Set page
   digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
   SPI.transfer(0x80); // Memory write
@@ -129,7 +146,7 @@ unsigned int ADIS16480::regRead(unsigned int regAddr) {
     Serial.print(" on page 0x");
     Serial.print((unsigned char)(regAddr << 8), HEX);
     Serial.print(" reads: 0x");
-    Serial.println(_dataRead, HEX);
+    Serial.println(_dataRead);
   #endif
 
   return(_dataRead);
