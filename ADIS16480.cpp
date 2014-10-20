@@ -73,6 +73,32 @@ void ADIS16480::reset() {
 }
 
 ////////////////////////////////////////////////////////////////////////////
+// tare()
+////////////////////////////////////////////////////////////////////////////
+// Tares IMU
+////////////////////////////////////////////////////////////////////////////
+void ADIS16480::tare() {
+  configSPI();
+  // Set page
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
+  SPI.transfer(0x80); // Memory write
+  SPI.transfer((unsigned char)(GLOB_CMD << 8)); // Change page
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+
+  // Write lower byte
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
+  SPI.transfer(0x80 | (unsigned char)GLOB_CMD); // write to GLOB_CMD lower byte
+  SPI.transfer(0x00);
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+
+  // Write upper byte
+  digitalWrite(_CS, LOW); // send CS low to enable SPI transfer to/from ADIS16480
+  SPI.transfer(0x80 | ((unsigned char)GLOB_CMD) + 1); // write to GLOB_CMD upper byte
+  SPI.transfer(0x01);
+  digitalWrite(_CS, HIGH); // send CS high to disable SPI transfer to/from ADIS16480
+}
+
+////////////////////////////////////////////////////////////////////////////
 // void configSPI()
 ////////////////////////////////////////////////////////////////////////////
 // Sets SPI bit order, clock divider, and data mode. This function is useful

@@ -186,6 +186,9 @@ public:
   // Performs hardware reset by sending pin 7 low for 2 seconds
   void reset();
 
+  // Tares IMU
+  void tare();
+
   // Sets SPI bit order, clock divider, and data mode
   void configSPI();
 
